@@ -3,13 +3,9 @@ dotenv.config();
 import * as line from "@line/bot-sdk";
 import express from "express";
 import axios from "axios";
+const PORT = process.env.PORT || 3000;
 
 const app = express();
-
-const config = {
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN!,
-  channelSecret: process.env.LINE_CHANNEL_SECRET!,
-};
 
 app.use(express.json());
 app.use(
@@ -17,7 +13,12 @@ app.use(
     extended: true,
   })
 );
-app.listen(3000);
+app.listen(PORT);
+
+const config = {
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN!,
+  channelSecret: process.env.LINE_CHANNEL_SECRET!,
+};
 line.middleware(config);
 
 app.post("/", (req, res) => {
