@@ -21,35 +21,41 @@ const config = {
 };
 line.middleware(config);
 
-app.post("/webhook", (req, res) => {
+app.get("/webhook", (_req, res) => {
+  res.send("Hello World");
+});
+
+app.post("/webhook", (req, _res) => {
+  console.log(req.body);
   Promise.all(req.body.events.map(handleEvent))
     .then(() => {
-      replyStocks();
+      getStocks();
     })
-    .catch(() => {
+    .catch((errorText) => {
+      console.log(errorText);
       return;
     });
 });
 
-const handleEvent = (event: {
-  replyToken: string;
+interface Event {
   type: string;
-  message: { type: string; text: string };
-}) => {
-  if (
-    event.type !== "message" ||
-    event.message.type !== "text" ||
-    event.message.text !== "ストック"
-  ) {
-    throw new Error();
+  message: {
+    type: string;
+    text: string;
+  };
+}
+
+const handleEvent = (event: Event) => {
+  if (event.type !== "message" || event.message.type !== "text" || event.message.text !== "ストック") {
+    return Promise.reject("エラー");
   }
+  return Promise.resolve();
 };
 
-const replyStocks = async () => {
-  const { data } = await axios.get<{ url: string }[]>(
-    "https://qiita.com/api/v2/users/kage95/stocks?per_page=5",
-    { headers: { Authorization: `Bearer ${process.env.QIITA_API}` } }
-  );
+const getStocks = async () => {
+  const { data } = await axios.get<{ url: string }[]>("https://qiita.com/api/v2/users/kage95/stocks?per_page=5", {
+    headers: { Authorization: `Bearer ${process.env.QIITA_API}` },
+  });
   const stockUrls = data.map(({ url }) => {
     return url;
   });

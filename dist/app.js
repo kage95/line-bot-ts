@@ -43,24 +43,30 @@ const config = {
     channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
 line.middleware(config);
-app.post("/webhook", (req, res) => {
+app.get("/webhook", (_req, res) => {
+    res.send("Hello World");
+});
+app.post("/webhook", (req, _res) => {
+    console.log(req.body);
     Promise.all(req.body.events.map(handleEvent))
         .then(() => {
-        replyStocks();
+        getStocks();
     })
-        .catch(() => {
+        .catch((errorText) => {
+        console.log(errorText);
         return;
     });
 });
 const handleEvent = (event) => {
-    if (event.type !== "message" ||
-        event.message.type !== "text" ||
-        event.message.text !== "ストック") {
-        throw new Error();
+    if (event.type !== "message" || event.message.type !== "text" || event.message.text !== "ストック") {
+        return Promise.reject("エラー");
     }
+    return Promise.resolve();
 };
-const replyStocks = async () => {
-    const { data } = await axios_1.default.get("https://qiita.com/api/v2/users/kage95/stocks?per_page=5", { headers: { Authorization: `Bearer ${process.env.QIITA_API}` } });
+const getStocks = async () => {
+    const { data } = await axios_1.default.get("https://qiita.com/api/v2/users/kage95/stocks?per_page=5", {
+        headers: { Authorization: `Bearer ${process.env.QIITA_API}` },
+    });
     const stockUrls = data.map(({ url }) => {
         return url;
     });
