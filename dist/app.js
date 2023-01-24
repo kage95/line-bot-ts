@@ -31,18 +31,19 @@ dotenv.config();
 const line = __importStar(require("@line/bot-sdk"));
 const express_1 = __importDefault(require("express"));
 const axios_1 = __importDefault(require("axios"));
+const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
+app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({
+    extended: true,
+}));
+app.listen(PORT);
 const config = {
     channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
     channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
-app.use(express_1.default.json());
 line.middleware(config);
-app.use(express_1.default.urlencoded({
-    extended: true,
-}));
-app.listen(3000);
-app.post("/", (req, res) => {
+app.post("/webhook", (req, res) => {
     Promise.all(req.body.events.map(handleEvent))
         .then(() => {
         replyStocks();
@@ -51,24 +52,24 @@ app.post("/", (req, res) => {
         return;
     });
 });
+const handleEvent = (event) => {
+    if (event.type !== "message" ||
+        event.message.type !== "text" ||
+        event.message.text !== "ストック") {
+        throw new Error();
+    }
+};
+const replyStocks = async () => {
+    const { data } = await axios_1.default.get("https://qiita.com/api/v2/users/kage95/stocks?per_page=5", { headers: { Authorization: `Bearer ${process.env.QIITA_API}` } });
+    const stockUrls = data.map(({ url }) => {
+        return url;
+    });
+    Promise.all(stockUrls.map(reply));
+};
 const client = new line.Client(config);
 const reply = async (url) => {
     await client.pushMessage(`${process.env.USER_ID}`, {
         type: "text",
         text: `${url}`,
     });
-};
-const handleEvent = (event) => {
-    if (event.type !== "message" ||
-        event.message.type !== "text" ||
-        event.message.text !== "stocks") {
-        throw new Error();
-    }
-};
-const replyStocks = async () => {
-    const { data } = await axios_1.default.get("https://qiita.com/api/v2/users/kage95/stocks?per_page=3", { headers: { Authorization: `Bearer ${process.env.QIITA_API}` } });
-    const stockUrls = data.map(({ url }) => {
-        return url;
-    });
-    Promise.all(stockUrls.map(reply));
 };
