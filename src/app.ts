@@ -21,7 +21,7 @@ const config = {
 };
 line.middleware(config);
 
-app.post("/", (req, res) => {
+app.post("/webhook", (req, res) => {
   Promise.all(req.body.events.map(handleEvent))
     .then(() => {
       replyStocks();
