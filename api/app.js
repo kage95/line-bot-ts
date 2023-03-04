@@ -28,32 +28,27 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
-const line = __importStar(require("@line/bot-sdk"));
+const bot_sdk_1 = require("@line/bot-sdk");
 const express_1 = __importDefault(require("express"));
 const axios_1 = __importDefault(require("axios"));
 const PORT = process.env.PORT || 3000;
 const app = (0, express_1.default)();
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({
-    extended: true,
-}));
 app.listen(PORT);
 const config = {
     channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
     channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
-line.middleware(config);
 app.get("/webhook", (_req, res) => {
     res.send("Hello World");
 });
-app.post("/webhook", (req, _res) => {
+app.post("/webhook", (0, bot_sdk_1.middleware)(config), (req, _res) => {
     console.log(req.body);
     Promise.all(req.body.events.map(handleEvent))
         .then(() => {
         getStocks();
     })
-        .catch((errorText) => {
-        console.log(errorText);
+        .catch((e) => {
+        console.log(e);
         return;
     });
 });
@@ -64,7 +59,8 @@ const handleEvent = (event) => {
     return Promise.resolve();
 };
 const getStocks = async () => {
-    const { data } = await axios_1.default.get("https://qiita.com/api/v2/users/kage95/stocks?per_page=5", {
+    const userName = process.env.USER_NAME;
+    const { data } = await axios_1.default.get(`https://qiita.com/api/v2/users/${userName}/stocks?per_page=5`, {
         headers: { Authorization: `Bearer ${process.env.QIITA_API}` },
     });
     const stockUrls = data.map(({ url }) => {
@@ -72,7 +68,7 @@ const getStocks = async () => {
     });
     Promise.all(stockUrls.map(reply));
 };
-const client = new line.Client(config);
+const client = new bot_sdk_1.Client(config);
 const reply = async (url) => {
     await client.pushMessage(`${process.env.USER_ID}`, {
         type: "text",
